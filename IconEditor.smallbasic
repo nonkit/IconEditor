@@ -1,9 +1,23 @@
-' Pseudo Code for 16x16 Plain PPM Icon Editor
+' 16x16 Plain PPM Icon Editor
 ' Copyright © 2015 Nonki Takahashi.  The MIT License.
+' Last update 2015-02-13
+' Program ID RFT686
 '
 ' set graphics window title
+GraphicsWindow.Title = "Icon Editor 0.1a"
 ' define variables as constants or functions
-' Form - show menu, white icon, and edit field in graphics window
+CR = Text.GetCharacter(13)
+LF = Text.GetCharacter(10)
+TAB = Text.GetCharacter(19)
+Not = "False=True;True=False;"
+' show menu, white icon, and edit field in graphics window
+iconWidth = 16
+iconHeight = 16
+itemSize = 40
+menuHeight = 60
+size = 16
+gap = 2
+Form()
 clicked = "False"
 keyIn = 0
 keyOut = 0
@@ -26,10 +40,29 @@ While "True"
     msgOut = msgOut + 1
   EndIf
 EndWhile
-Sub OnMouseDown
-  dx = GraphicsWindow.MouseX
-  dy = GraphicsWindow.MouseY
-  mouseDown = "True"
+Sub Form
+  gw = 598
+  gh = 428
+  GraphicsWindow.Width = gw
+  GraphicsWindow.Height = gh
+  GraphicsWindow.BackgroundColor = "DimGray"
+  Menu_Draw()
+  xEdit = Math.Floor((gw - (size + gap + 1) * iconWidth) / 2) + iconWidth
+  yEdit = Math.Floor((gh - menuHeight - (size + gap) * iconHeight) / 2) + menuHeight
+  xIcon = Math.Floor((xEdit - iconWidth) / 2)
+  yIcon = yEdit
+  Icon_Clear()
+EndSub
+Sub Icon_Clear
+  GraphicsWindow.BrushColor = "White"
+  GraphicsWindow.FillRectangle(xIcon, yIcon, iconWidth, iconHeight)
+  For row = 0 To iconHeight - 1
+    y = yEdit + row * (size + gap)
+    For col = 0 To iconWidth - 1
+      x = xEdit + col * (size + gap)
+      GraphicsWindow.FillRectangle(x, y, size, size)
+    EndFor
+  EndFor
 EndSub
 Sub KB_OnKeyDown
   ' Keyboard | Key down event handler
@@ -51,6 +84,27 @@ Sub KB_OnKeyUp
   ElseIf key = "LeftCtrl" Or key = "RightCtrl" Then
     ctrl = ""
   EndIf
+EndSub
+Sub Menu_Draw
+  GraphicsWindow.BrushColor = "#EEEEEE"
+  GraphicsWindow.FillRectangle(0, 0, gw, menuHeight)
+  item = "1=New;2=Open;3=Save;4=Pencil;5=Pen Color;"
+  nItem = Array.GetItemCount(item)
+  For i = 1 To nItem
+    Menu_DrawItem()
+  EndFor
+EndSub
+Sub Menu_DrawItem
+  ' param i
+  y = Math.Floor((menuHeight - itemSize - 10) / 2)
+  x = (i - 1) * menuHeight + Math.Floor((menuHeight - itemSize) / 2)
+  url = Program.Directory + "\img\" + item[i] + ".png"
+  GraphicsWindow.DrawImage(url, x, y)
+  GraphicsWindow.FontSize = 10
+  GraphicsWindow.FontBold = "False"
+  GraphicsWindow.FontName = "Trebuchet MS"
+  GraphicsWindow.BrushColor = "Black"
+  GraphicsWindow.DrawText(x + 6, y + itemSize, item[i])
 EndSub
 Sub Mouse_OnDown
   ' Mouse | Common event handler on mouse down
