@@ -1,29 +1,35 @@
 ' 16x16 Plain PPM Icon Editor
 ' Copyright © 2015 Nonki Takahashi.  The MIT License.
-' Last update 2015-02-13
-' Program ID RFT686
+' Version 0.2a
+' Last update 2015-02-14
+' Program ID RFT686-0
+' Repository https://iconeditorsb.codeplex.com/
 '
 ' set graphics window title
-GraphicsWindow.Title = "Icon Editor 0.1a"
+GraphicsWindow.Title = "Icon Editor 0.2a"
 ' define variables as constants or functions
 CR = Text.GetCharacter(13)
 LF = Text.GetCharacter(10)
 TAB = Text.GetCharacter(19)
 Not = "False=True;True=False;"
+' width/height [%] of each character in Trebuchet MS font
+ratio = "32=30;48=58;49=58;50=58;51=58;52=58;53=58;54=58;55=58;56=58;57=58;97=53;98=58;99=51;100=58;101=57;102=37;103=50;104=59;105=30;106=37;107=55;108=29;109=86;110=59;111=56;112=58;113=58;114=43;115=43;116=39;117=59;118=53;119=78;120=55;121=53;122=53;65=63;66=59;67=61;68=64;69=57;70=58;71=67;72=68;73=28;74=53;75=62;76=55;77=74;78=67;79=70;80=59;81=71;82=61;83=51;84=61;85=68;86=62;87=88;88=60;89=61;90=56;"
 ' show menu, white icon, and edit field in graphics window
-iconWidth = 16
-iconHeight = 16
-itemSize = 40
-menuHeight = 60
-size = 16
-gap = 2
 Form()
+' initialize mouse and keyboard events
 clicked = "False"
 keyIn = 0
 keyOut = 0
 msgIn = 0
 msgOut = 0
-' initialize mouse and keyboard events 
+color = "DeepPink"
+Color_SetPenColor()
+For y = 0 To iconHeight - 1
+  For x = 0 To iconWidth - 1
+    Icon_GetPixel()
+    Icon_SetPixel()
+  EndFor
+EndFor
 While "True"
   If clicked Then
     ' find clicked object - menu item or pixel of the icon
@@ -46,6 +52,13 @@ Sub Form
   GraphicsWindow.Width = gw
   GraphicsWindow.Height = gh
   GraphicsWindow.BackgroundColor = "DimGray"
+  iconWidth = 16  '40
+  iconHeight = 16 '40
+  itemSize = 40
+  itemGap = 10
+  menuHeight = 60
+  size = 16       '6
+  gap = 2
   Menu_Draw()
   xEdit = Math.Floor((gw - (size + gap + 1) * iconWidth) / 2) + iconWidth
   yEdit = Math.Floor((gh - menuHeight - (size + gap) * iconHeight) / 2) + menuHeight
@@ -53,9 +66,37 @@ Sub Form
   yIcon = yEdit
   Icon_Clear()
 EndSub
+Sub Array_GetIndexOfValue
+  ' param arry - array
+  ' param value - value to get index
+  ' return index - index if found or "" if not found
+  nValue = Array.GetItemCount(arry)
+  indices = Array.GetAllIndices(arry)
+  index = ""
+  For iArry = 1 To nValue
+    If value = arry[indices[iArry]] Then
+      index = indices[iArry]
+      iArry = nValue + 1  ' break
+    EndIf
+  EndFor
+EndSub
+Sub Color_SetPenColor
+  ' param color
+  GraphicsWindow.BrushColor = color
+  padding = 4
+  arry = item
+  value = "Pen Color"
+  Array_GetIndexOfValue()
+  y = Math.Floor((menuHeight - itemSize - 10) / 2) + padding
+  x = (index - 1) * (itemSize + itemGap) + itemGap + padding
+  GraphicsWindow.FillRectangle(x, y, itemSize - 2 * padding, itemSize - 2 * padding)
+EndSub
 Sub Icon_Clear
   GraphicsWindow.BrushColor = "White"
   GraphicsWindow.FillRectangle(xIcon, yIcon, iconWidth, iconHeight)
+  ' for PR
+  url = Program.Directory + "\img\heart16.png"
+  GraphicsWindow.DrawImage(url, xIcon, yIcon)
   For row = 0 To iconHeight - 1
     y = yEdit + row * (size + gap)
     For col = 0 To iconWidth - 1
@@ -63,6 +104,18 @@ Sub Icon_Clear
       GraphicsWindow.FillRectangle(x, y, size, size)
     EndFor
   EndFor
+EndSub
+Sub Icon_GetPixel
+  ' param x, y - position in icon
+  ' return color - got color
+  color = GraphicsWindow.GetPixel(xIcon + x, yIcon + y)
+EndSub
+Sub Icon_SetPixel
+  ' param x, y - position in icon
+  ' param color - set color
+  GraphicsWindow.SetPixel(xIcon + x, yIcon + y, color)
+  GraphicsWindow.BrushColor = color
+  GraphicsWindow.FillRectangle(xEdit + x * (size + gap), yEdit + y * (size + gap), size, size)
 EndSub
 Sub KB_OnKeyDown
   ' Keyboard | Key down event handler
@@ -88,7 +141,7 @@ EndSub
 Sub Menu_Draw
   GraphicsWindow.BrushColor = "#EEEEEE"
   GraphicsWindow.FillRectangle(0, 0, gw, menuHeight)
-  item = "1=New;2=Open;3=Save;4=Pencil;5=Pen Color;"
+  item = "1=New;2=Open;3=Save;4=Undo;5=Redo;6=Pencil;7=Pen Color;"
   nItem = Array.GetItemCount(item)
   For i = 1 To nItem
     Menu_DrawItem()
@@ -97,14 +150,18 @@ EndSub
 Sub Menu_DrawItem
   ' param i
   y = Math.Floor((menuHeight - itemSize - 10) / 2)
-  x = (i - 1) * menuHeight + Math.Floor((menuHeight - itemSize) / 2)
+  x = (i - 1) * (itemSize + itemGap) + itemGap
   url = Program.Directory + "\img\" + item[i] + ".png"
   GraphicsWindow.DrawImage(url, x, y)
-  GraphicsWindow.FontSize = 10
+  fs = 10
+  GraphicsWindow.FontSize = fs
   GraphicsWindow.FontBold = "False"
   GraphicsWindow.FontName = "Trebuchet MS"
   GraphicsWindow.BrushColor = "Black"
-  GraphicsWindow.DrawText(x + 6, y + itemSize, item[i])
+  txt = item[i]
+  Text_GetWidthInPx()
+  dx = Math.Floor((itemSize - px) / 2)
+  GraphicsWindow.DrawText(x + dx, y + itemSize, item[i])
 EndSub
 Sub Mouse_OnDown
   ' Mouse | Common event handler on mouse down
@@ -130,4 +187,16 @@ Sub Mouse_OnUp
   mxU = Math.Floor(GraphicsWindow.MouseX)
   myU = Math.Floor(GraphicsWindow.MouseY)
   released = "True"
+EndSub
+Sub Text_GetWidthInPx
+  ' param txt - text to get width in px
+  ' param ratio - character width/height in a font
+  ' param fs - font size (height)
+  ' return px - width in px (pixels)
+  len = Text.GetLength(txt)
+  px = 0
+  For p = 1 To len
+    px = px + ratio[Text.GetCharacterCode(Text.GetSubText(txt, p, 1))]
+  EndFor
+  px = Math.Floor(px * fs / 100)
 EndSub
