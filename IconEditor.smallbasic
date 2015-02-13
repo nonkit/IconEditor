@@ -1,0 +1,79 @@
+' Pseudo Code for 16x16 Plain PPM Icon Editor
+' Copyright © 2015 Nonki Takahashi.  The MIT License.
+'
+' set graphics window title
+' define variables as constants or functions
+' Form - show menu, white icon, and edit field in graphics window
+clicked = "False"
+keyIn = 0
+keyOut = 0
+msgIn = 0
+msgOut = 0
+' initialize mouse and keyboard events 
+While "True"
+  If clicked Then
+    ' find clicked object - menu item or pixel of the icon
+    ' create message (command) for the object if found
+    clicked = "False"
+  EndIf
+  If keyOut < keyIn Then
+    ' find shortcut
+    ' create message (command) for the shortcut if found
+    keyOut = keyOut + 1
+  EndIf
+  If msgOut < msgIn Then
+    ' do action for the message (command)
+    msgOut = msgOut + 1
+  EndIf
+EndWhile
+Sub OnMouseDown
+  dx = GraphicsWindow.MouseX
+  dy = GraphicsWindow.MouseY
+  mouseDown = "True"
+EndSub
+Sub KB_OnKeyDown
+  ' Keyboard | Key down event handler
+  key = GraphicsWindow.LastKey
+  If key = "LeftShift" Or key = "RightShift" Then
+    shift = "⇧"
+  ElseIf key = "LeftCtrl" Or key = "RightCtrl" Then
+    ctrl = "^"
+  Else
+    in = in + 1
+    fifo[in] = shift + ctrl + key
+  EndIf
+EndSub
+Sub KB_OnKeyUp
+  ' Keyboard | Key up event handler
+  key = GraphicsWindow.LastKey
+  If key = "LeftShift" Or key = "RightShift" Then
+    shift = ""
+  ElseIf key = "LeftCtrl" Or key = "RightCtrl" Then
+    ctrl = ""
+  EndIf
+EndSub
+Sub Mouse_OnDown
+  ' Mouse | Common event handler on mouse down
+  ' return mxD, myD - position on mouse down
+  mxD = Math.Floor(GraphicsWindow.MouseX)
+  myD = Math.Floor(GraphicsWindow.MouseY)
+  clicked = "True"
+  released = "False"
+EndSub
+Sub Mouse_DoNothing
+  ' Mouse | Common event handler to do nothing
+EndSub
+Sub Mouse_OnMove
+  ' Mouse | Common event handler on mouse move
+  ' return mxM, myM - position on mouse move
+  mxM = Math.Floor(GraphicsWindow.MouseX)
+  myM = Math.Floor(GraphicsWindow.MouseY)
+  moved = "True"
+EndSub
+Sub Mouse_OnUp
+  ' Mouse | Common event handler on mouse up
+  ' return mxU, myU - position on mouse up
+  mxU = Math.Floor(GraphicsWindow.MouseX)
+  myU = Math.Floor(GraphicsWindow.MouseY)
+  released = "True"
+EndSub
