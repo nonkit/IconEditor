@@ -5,8 +5,3 @@ This program is a 16 x 16 plane PPM (Portable Pixmap) bitmap editor written in M
 
 * IconEditor.exe
 * SmallBasicLibrary.dll
-* img\new.png
-* img\open.png
-* img\save.png
-* img\pencil.png
-* img\pen color.png
