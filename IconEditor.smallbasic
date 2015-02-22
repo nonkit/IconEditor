@@ -1,24 +1,23 @@
 ' 16x16 Plain PPM Icon Editor
 ' Copyright © 2015 Nonki Takahashi.  The MIT License.
-' Version 0.4a
-' Last update 2015-02-19
-' Program ID RFT686-2
+' Version 0.5b
+' Last update 2015-02-22
+' Program ID RFT686-3
 ' Repository https://iconeditorsb.codeplex.com/
 '
 ' TODO:
 '  [ ] #9 Workaround for Silverlight
 '  [ ] #8 Add unit test feature
-'  [ ] #7 Add new command
-'  [✓] #6 Add color command
+'  [✓] #7 Add new command
 '  [ ] #5 Add redo command
 '  [ ] #4 Add undo command
-'  [ ] #3 Add save command
-'  [ ] #2 Add open command
-'  [✓] #1 Add pixel command
+'  [✓] #3 Add save command
+'  [✓] #2 Add open command
 '
 ' set graphics window title
-title = "Icon Editor 0.4a"
-GraphicsWindow.Title = "Untitled - " + title
+title = "Icon Editor 0.5b"
+fname = "Untitled"
+GraphicsWindow.Title = fname + " - " + title
 ' define variables as constants or functions
 debug = "False"
 If debug Then
@@ -29,6 +28,7 @@ EndIf
 CR = Text.GetCharacter(13)
 LF = Text.GetCharacter(10)
 TAB = Text.GetCharacter(9)
+DIGIT = "0123456789"
 Not = "False=True;True=False;"
 ' width/height [%] of each character in Trebuchet MS font
 ratio = "32=30;48=58;49=58;50=58;51=58;52=58;53=58;54=58;55=58;56=58;57=58;97=53;98=58;99=51;100=58;101=57;102=37;103=50;104=59;105=30;106=37;107=55;108=29;109=86;110=59;111=56;112=58;113=58;114=43;115=43;116=39;117=59;118=53;119=78;120=55;121=53;122=53;65=63;66=59;67=61;68=64;69=57;70=58;71=67;72=68;73=28;74=53;75=62;76=55;77=74;78=67;79=70;80=59;81=71;82=61;83=51;84=61;85=68;86=62;87=88;88=60;89=61;90=56;"
@@ -38,6 +38,7 @@ KB_Init()
 ' show menu, white icon, and edit field in graphics window
 pcolor = GraphicsWindow.PenColor
 Form()
+GraphicsWindow.FontSize = 12
 Color_Init()
 Msg_Init()
 For y = 0 To iconHeight - 1
@@ -100,16 +101,23 @@ While "True"
     ' do action for the message (command)
     msgOut = msgOut + 1
     msg = message[msgOut]
-    If msg["cmd"] = "pixel" Then
-      color = pcolor
-      x = msg["x"]
-      y = msg["y"]
-      Icon_SetPixel()
+    If msg["cmd"] = "new" Then
+      New()
+    ElseIf msg["cmd"] = "open" Then
+      Open()
+    ElseIf msg["cmd"] = "save" Then
+      Save()
     ElseIf msg["cmd"] = "color" Then
       color = pcolor
       CS_ShowPopup()
       pcolor = color
       Color_SetPenColor()
+    ElseIf msg["cmd"] = "pixel" Then
+      color = pcolor
+      x = msg["x"]
+      y = msg["y"]
+      Icon_SetPixel()
+      GraphicsWindow.Title = fname + " * - " + title
     Else
       GraphicsWindow.Title = msg["cmd"] + " - " + title
     EndIf
@@ -142,6 +150,33 @@ Sub Form
   add = "True"
   Icon_Clear()
   add = "False"
+EndSub
+Sub New
+  yes = "True"
+  If Text.IsSubText(GraphicsWindow.Title, "*") Then
+    caution = "Are you sure to clear the icon?"
+    Dialog_YesNo()
+  EndIf
+  If yes Then
+    Icon_Clear()
+    fname = "Untitled"
+    relPath = ""
+    GraphicsWindow.Title = fname + " - " + title
+  EndIf
+EndSub
+Sub Open
+  ' open command
+  File_Open()
+  Parse_PPM()
+  If match And relPath <> "" Then
+    fname = relPath
+    GraphicsWindow.Title = fname + " - " + title
+  EndIf
+EndSub
+Sub Save
+  ' save command
+  File_GeneratePPM()
+  File_Save()
 EndSub
 Sub Array_GetIndexOfValue
   ' param arry - array
@@ -721,6 +756,290 @@ Sub Debug_Dump
   TextWindow.WriteLine("msgIn = " + msgIn)
   TextWindow.WriteLine("msgOut = " + msgOut)
 EndSub
+Sub Dialog_YesNo
+  ' param caution - message
+  ' return yes - if [Yes] pushed
+  yes = "True"
+  GraphicsWindow.PenWidth = 0
+  GraphicsWindow.BrushColor = POPUPCOLOR
+  oMsgBox = Shapes.AddRectangle(gw, gh)
+  Shapes.SetOpacity(oMsgBox, 64)
+  GraphicsWindow.BrushColor = CAPTIONCOLOR
+  oCaution = Shapes.AddText(caution)
+  yCaution = (gh - 80) / 2
+  Shapes.Move(oCaution, 150, yCaution)
+  oYes = Controls.AddButton("Yes", 360, yCaution + 50)
+  oNo = Controls.AddButton("No", 400, yCaution + 50)
+  cont = "True"         ' continue
+  Controls.ButtonClicked = File_OnButtonClicked
+  While cont
+    Program.Delay(500)
+  EndWhile
+  If Controls.LastClickedButton = oNo Then
+    yes = "False"
+  EndIf
+  Controls.Remove(oNo)
+  Controls.Remove(oYes)
+  Shapes.Remove(oCaution)
+  Shapes.Remove(oMsgBox)
+EndSub
+Sub File_GetAbsPath
+  ' param curDir - current directory
+  ' param relPath - relative path
+  ' return absPath - absolute path
+  If Text.IsSubText(relPath, ":") Or Text.StartsWith(relPath, "\") Or relPath = "" Then
+    absPath = relPath
+  Else
+    absPath = curDir + "\" + relPath
+    File_RemoveDots()
+  EndIf
+EndSub
+Sub File_RemoveDots
+  ' param absPath - with dots
+  ' return absPath - without dots
+  path = absPath
+  folder = ""
+  n = 0
+  While Text.IsSubText(path, "\")
+    n = n + 1
+    p = Text.GetIndexOf(path, "\")
+    folder[n] = Text.GetSubText(path, 1, p - 1)
+    path = Text.GetSubTextToEnd(path, p + 1)
+  EndWhile
+  If path <> "" Then
+    n = n + 1
+    folder[n] = path
+  EndIf
+  While Array.ContainsValue(folder, ".") Or Array.ContainsValue(folder, "..")
+    For i = 1 To n
+      If folder[i] = "." Then
+        File_RemoveEntry()
+        i = n + 1 ' break
+      ElseIf folder[i] = ".." Then
+        i = i - 1
+        File_RemoveEntry()
+        File_RemoveEntry()
+        i = n + 1 ' break
+      EndIf
+    EndFor
+  EndWhile
+  absPath = folder[1]
+  For i = 2 To n
+    absPath = absPath + "\" + folder[i]
+  EndFor
+EndSub
+Sub File_RemoveEntry
+  ' param folder - entry array
+  ' param i - entry index
+  ' return folder - updated entry array
+  ' return n
+  For _i = i To n - 1
+    folder[_i] = folder[_i + 1]
+  EndFor
+  folder[n] = ""
+  n = n - 1
+EndSub
+Sub File_CloseDialog
+  ' File | Close dialog for Open/Save
+  ' param oPopup
+  ' param oCaption
+  ' param oFilename
+  ' param oText
+  ' param oMsg
+  ' param oCancel
+  Controls.Remove(oCancel)
+  Controls.Remove(oMsg)
+  Controls.Remove(oText)
+  Controls.Remove(oFilename)
+  Controls.Remove(oCaption)
+  Controls.Remove(oPopup)
+EndSub
+Sub File_GeneratePPM
+  ' File | Generate PPM in buf
+  ' return buf - buffer
+  buf = "P3" + CR + LF
+  buf = buf + "16 16" + CR + LF
+  buf = buf + "255" + CR + LF
+  nRGB = 0
+  For y = 0 To iconHeight - 1
+    nCol = 0
+    For x = 0 To iconWidth - 1
+      Icon_GetPixel()
+      sColor = color
+      Color_ColorToRGB()
+      len = Text.GetLength(iR)
+      sp = Text.GetSubTextToEnd("  ", len)
+      buf = buf + sp + iR + " "
+      len = Text.GetLength(iG)
+      sp = Text.GetSubTextToEnd("  ", len)
+      buf = buf + sp + iG + " "
+      len = Text.GetLength(iB)
+      sp = Text.GetSubTextToEnd("  ", len)
+      buf = buf + sp + iB
+      If (Math.Remainder(nCol, 5) = 4) Or (nCol = iconWidth - 1) Then
+        buf = buf + CR + LF
+      Else
+        buf = buf + "  "
+      EndIf
+      nCol = nCol + 1
+    EndFor
+  EndFor
+EndSub
+Sub File_GetBasename
+  ' FIle | Get basename from filename
+  ' param filename
+  ' return basename
+  ' return ext - extension
+  pFilename = 1
+  While Text.IsSubText(Text.GetSubTextToEnd(filename, pFilename), "\")
+    iBackslash = Text.GetIndexOf(Text.GetSubTextToEnd(filename, pFilename), "\")
+    pFilename = pFilename + iBackslash
+  EndWhile
+  iDot = Text.GetIndexOf(Text.GetSubTextToEnd(filename, pFilename), ".")
+  If 0 < iDot Then
+    basename = Text.GetSubText(filename, pFilename, iDot - 1)
+    ext = Text.GetSubTextToEnd(filename, pFilename + iDot)
+  Else
+    basename = Text.GetSubTextToEnd(filename, pFilename)
+    ext = ""
+  EndIf
+EndSub
+Sub File_Open
+  ' File | Show input code to open
+  ' return buf
+  ' return filename
+  Stack.PushValue("local", cont)
+  relPath = ""
+  filename = ""
+  File_OpenDialog()
+  oOpen = Controls.AddButton("Open", 486, gh - 34)
+  Shapes.SetText(oMsg, "You can also click above, push Ctrl+V to paste from clipboard")
+  Controls.ButtonClicked = File_OnButtonClicked
+  Controls.TextTyped = File_OnTextTyped
+  subname = "Shapes_Init"
+  typed = "False"
+  done = "False"
+  While Not[done]
+    cont = "True"         ' continue
+    While cont
+      If typed Then
+        curDir = Program.Directory
+        relPath = Controls.GetTextBoxText(oFilename)
+        File_GetAbsPath()
+        filename = absPath
+        buf = ""
+        buf = File.ReadContents(filename)
+        Controls.SetTextBoxText(oText, buf)
+        typed = "False"
+      Else
+        Program.Delay(200)
+      EndIf
+    EndWhile
+    If Controls.LastClickedButton = oOpen Then
+      buf = Controls.GetTextBoxText(oText)
+      If buf <> "" Then
+        done = "True"
+      EndIf
+    Else
+      buf = ""
+      relPath = ""
+      filename = ""
+      done = "True"
+    EndIf
+  EndWhile
+  Controls.Remove(oOpen)
+  File_CloseDialog()
+  cont = Stack.PopValue("local")
+EndSub
+Sub File_OpenDialog
+  ' File | Open dialog and common parts for Open/Save
+  ' param relPath
+  ' return oPopup
+  ' return oCaption
+  ' return oFilename
+  ' return oText
+  ' return oMsg
+  ' return oCancel
+  GraphicsWindow.PenWidth = 0
+  GraphicsWindow.BrushColor = POPUPCOLOR
+  oPopup = Shapes.AddRectangle(gw, gh)
+  Shapes.SetOpacity(oPopup, 64)
+  Shapes.Move(oPopup, LEFTX - 10, TOPY - 10)
+  GraphicsWindow.BrushColor = CAPTIONCOLOR
+  oCaption = Shapes.AddText("Filename")
+  Shapes.Move(oCaption, LEFTX, TOPY + 4)
+  GraphicsWindow.BrushColor = TEXTCOLOR
+  oFilename = Controls.AddTextBox(LEFTX + 80, TOPY)
+  Shapes.SetOpacity(oFilename, OPACITY)
+  Controls.SetSize(oFilename, 300, 24)
+  Controls.SetTextBoxText(oFilename, relPath)
+  oText = Controls.AddMultiLineTextBox(LEFTX, TOPY + 30)
+  Controls.SetSize(oText, gw - 20, gh - 84)
+  Shapes.SetOpacity(oText, OPACITY)
+  GraphicsWindow.BrushColor = CAPTIONCOLOR
+  oMsg = Shapes.AddText("")
+  Shapes.Move(oMsg, LEFTX, gh - 28)
+  GraphicsWindow.BrushColor = TEXTCOLOR
+  oCancel = Controls.AddButton("Cancel", 535, gh - 34)
+EndSub
+Sub File_Save
+  ' File | Show output code to save
+  ' param buf - program buffer
+  ' param filename
+  Stack.PushValue("local", cont)
+  File_OpenDialog()
+  Controls.SetTextBoxText(oText, buf)
+  oSave = Controls.AddButton("Save", 488, gh - 34)
+  Shapes.SetText(oMsg, "You can also click above, push Ctrl+A, Ctrl+C to copy to clipboard")
+  Controls.ButtonClicked = File_OnButtonClicked
+  Controls.TextTyped = File_OnTextTyped
+  done = "False"
+  While Not[done]
+    cont = "True"         ' continue
+    While cont
+      If typed Then
+        curDir = Program.Directory
+        relPath = Controls.GetTextBoxText(oFilename)
+        File_GetAbsPath()
+        filename = absPath
+        File_GetBasename()
+        lowerExt = Text.ConvertToLowerCase(ext)
+        typed = "False"
+      Else
+        Program.Delay(500)
+      EndIf
+    EndWhile
+    buf = Controls.GetTextBoxText(oText)
+    If (Controls.LastClickedButton = oSave) And (filename <> "") Then
+      dummy = ""  ' for Silverlight
+      dummy = File.ReadContents(filename)
+      yes = "True"
+      If dummy <> "" Then
+        caution = "'" + basename + "." +  ext + "' already exists." + CR + LF + "Do you want to replace it?"
+        Dialog_YesNo()
+      EndIf
+      If yes Then
+        File.WriteContents(filename, buf)
+        done = "True" ' saved
+      EndIf
+    ElseIf Controls.LastClickedButton = oCancel Then
+      done = "True"   ' canceled
+    EndIf
+  EndWhile
+  Controls.Remove(oSave)
+  File_CloseDialog()
+  cont = Stack.PopValue("local")
+EndSub
+Sub File_OnButtonClicked
+  ' File | Button event handler
+  cont = "False"
+EndSub
+Sub File_OnTextTyped
+  ' File | Textbox event handler
+  If Controls.LastTypedTextBox = oFilename Then
+    typed = "True"
+  EndIf
+EndSub
 Sub Icon_Clear
   ' param add - "True" to add menu to mouse object
   GraphicsWindow.BrushColor = "White"
@@ -993,6 +1312,127 @@ Sub Msg_Set
   ' param["*"].. - message operands
   msgIn = msgIn + 1
   message[msgIn] = param
+EndSub
+Sub Parse_Decimal
+  ' param buf - buffer to parse
+  ' param p - poiter to the buffer
+  ' return p - updated pointer
+  ' return dec - decimal number
+  ' return match - "True" if match
+  match = "False"
+  isDigit = "True"
+  dec = 0
+  While isDigit
+    char = Text.GetSubText(buf, p, 1)
+    If Text.IsSubText(DIGIT, char) Then
+      dec = dec * 10 + char
+      p = p + 1
+      match = "True"
+    Else
+      isDigit = "False"
+    EndIf
+  EndWhile
+EndSub
+Sub Parse_MagicNumber
+  ' param buf - buffer to parse
+  ' param p - poiter to the buffer
+  ' return p - updated pointer
+  ' return match - "True" if match
+  If Text.StartsWith(Text.GetSubTextToEnd(buf, p), "P3") Then
+    p = p + 2
+    match = "True"
+  Else
+    match = "False"
+  EndIf
+EndSub
+Sub Parse_PPM
+  ' param buf - buffer to parse
+  ' return p - updated pointer
+  ' return match - "True" if match
+  p = 1
+  Parse_MagicNumber()
+  If match Then
+    Parse_WhiteSpace()
+  EndIf
+  If match Then
+    Parse_Decimal()
+    If match Then
+      If dec <> iconWidth Then
+        match = "False"
+      EndIf
+    EndIf
+  EndIf
+  If match Then
+    Parse_WhiteSpace()
+  EndIf
+  If match Then
+    Parse_Decimal()
+    If match Then
+      If dec <> iconHeight Then
+        match = "False"
+      EndIf
+    EndIf
+  EndIf
+  If match Then
+    Parse_WhiteSpace()
+  EndIf
+  If match Then
+    Parse_Decimal()
+    If match Then
+      If 0 < dec And dec < 65536 Then
+        maxVal = dec
+      Else
+        match = "False"
+      EndIf
+    EndIf
+  EndIf
+  If match Then
+    Icon_Clear()
+    For y = 0 To iconHeight - 1
+      For x = 0 To iconWidth - 1
+        Parse_WhiteSpace()
+        Parse_Decimal()
+        If match Then
+          iR = dec
+        Else
+          Goto PPPM_Error
+        EndIf
+        Parse_WhiteSpace()
+        Parse_Decimal()
+        If match Then
+          iG = dec
+        Else
+          Goto PPPM_Error
+        EndIf
+        Parse_WhiteSpace()
+        Parse_Decimal()
+        If match Then
+          iB = dec
+        Else
+          Goto PPPM_Error
+        EndIf
+        color = GraphicsWindow.GetColorFromRGB(iR, iG, iB)
+        Icon_SetPixel()
+      EndFor
+    EndFor
+  EndIf
+  PPPM_Error:
+EndSub
+Sub Parse_WhiteSpace
+  ' param buf - buffer to parse
+  ' param p - poiter to the buffer
+  ' return p - updated pointer
+  ' return match - "True"
+  isSpace = "True"
+  While isSpace
+    char = Text.GetSubText(buf, p, 1)
+    If Text.IsSubText(" " + TAB + CR + LF, char) Then
+      p = p + 1
+    Else
+      isSpace = "False"
+    EndIf
+  EndWhile
+  match = "True"
 EndSub
 Sub Popup_Init
   TOPY = 10   ' top y
