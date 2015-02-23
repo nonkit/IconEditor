@@ -1,21 +1,21 @@
 ' 16x16 Plain PPM Icon Editor
 ' Copyright © 2015 Nonki Takahashi.  The MIT License.
-' Version 0.5b
-' Last update 2015-02-22
+' Version 0.6b
+' Last update 2015-02-23
 ' Program ID RFT686-3
 ' Repository https://iconeditorsb.codeplex.com/
 '
 ' TODO:
+'  [✓] #12 Support maxval in PPM
+'  [✓] #11 Support comment in PPM
+'  [ ] #10 Support other image format in Open
 '  [ ] #9 Workaround for Silverlight
 '  [ ] #8 Add unit test feature
-'  [✓] #7 Add new command
-'  [ ] #5 Add redo command
-'  [ ] #4 Add undo command
-'  [✓] #3 Add save command
-'  [✓] #2 Add open command
+'  [✓] #5 Add redo command
+'  [✓] #4 Add undo command
 '
 ' set graphics window title
-title = "Icon Editor 0.5b"
+title = "Icon Editor 0.6b"
 fname = "Untitled"
 GraphicsWindow.Title = fname + " - " + title
 ' define variables as constants or functions
@@ -31,7 +31,14 @@ TAB = Text.GetCharacter(9)
 DIGIT = "0123456789"
 Not = "False=True;True=False;"
 ' width/height [%] of each character in Trebuchet MS font
-ratio = "32=30;48=58;49=58;50=58;51=58;52=58;53=58;54=58;55=58;56=58;57=58;97=53;98=58;99=51;100=58;101=57;102=37;103=50;104=59;105=30;106=37;107=55;108=29;109=86;110=59;111=56;112=58;113=58;114=43;115=43;116=39;117=59;118=53;119=78;120=55;121=53;122=53;65=63;66=59;67=61;68=64;69=57;70=58;71=67;72=68;73=28;74=53;75=62;76=55;77=74;78=67;79=70;80=59;81=71;82=61;83=51;84=61;85=68;86=62;87=88;88=60;89=61;90=56;"
+ratio = "32=30;48=58;49=58;50=58;51=58;52=58;53=58;54=58;55=58;56=58;"
+ratio = ratio + "57=58;65=63;66=59;67=61;68=64;69=57;70=58;71=67;"
+ratio = ratio + "72=68;73=28;74=53;75=62;76=55;77=74;78=67;79=70;"
+ratio = ratio + "80=59;81=71;82=61;83=51;84=61;85=68;86=62;87=88;"
+ratio = ratio + "88=60;89=61;90=56;97=53;98=58;99=51;100=58;101=57;"
+ratio = ratio + "102=37;103=50;104=59;105=30;106=37;107=55;108=29;"
+ratio = ratio + "109=86;110=59;111=56;112=58;113=58;114=43;115=43;"
+ratio = ratio + "116=39;117=59;118=53;119=78;120=55;121=53;122=53;"
 ' initialize mouse and keyboard events
 Mouse_Init()
 KB_Init()
@@ -41,12 +48,7 @@ Form()
 GraphicsWindow.FontSize = 12
 Color_Init()
 Msg_Init()
-For y = 0 To iconHeight - 1
-  For x = 0 To iconWidth - 1
-    Icon_GetPixel()
-    Icon_SetPixel()
-  EndFor
-EndFor
+Macro_Init()
 While "True"
   If clicked Then
     ' find clicked object - menu item or pixel of the icon
@@ -92,7 +94,7 @@ While "True"
       c = ""
     ElseIf debug Then
       TextWindow.ForegroundColor = "Red"
-      TextWindow.WriteLine("Unknown = '" + c + "'")
+      TextWindow.WriteLine("Unknown cmd: '" + c + "'")
       TextWindow.ForegroundColor = "Gray"
       c = ""
     EndIf
@@ -107,17 +109,24 @@ While "True"
       Open()
     ElseIf msg["cmd"] = "save" Then
       Save()
+    ElseIf msg["cmd"] = "undo" Then
+      Macro_Undo()
+    ElseIf msg["cmd"] = "redo" Then
+      Macro_Redo()
     ElseIf msg["cmd"] = "color" Then
       color = pcolor
       CS_ShowPopup()
       pcolor = color
       Color_SetPenColor()
     ElseIf msg["cmd"] = "pixel" Then
-      color = pcolor
       x = msg["x"]
       y = msg["y"]
+      Icon_GetPixel()
+      msg["from"] = color
+      msg["to"] = pcolor
+      Macro_Add()
+      color = pcolor
       Icon_SetPixel()
-      GraphicsWindow.Title = fname + " * - " + title
     Else
       GraphicsWindow.Title = msg["cmd"] + " - " + title
     EndIf
@@ -161,7 +170,7 @@ Sub New
     Icon_Clear()
     fname = "Untitled"
     relPath = ""
-    GraphicsWindow.Title = fname + " - " + title
+    Macro_Init()
   EndIf
 EndSub
 Sub Open
@@ -170,7 +179,7 @@ Sub Open
   Parse_PPM()
   If match And relPath <> "" Then
     fname = relPath
-    GraphicsWindow.Title = fname + " - " + title
+    Macro_Init()
   EndIf
 EndSub
 Sub Save
@@ -1065,6 +1074,9 @@ Sub Icon_GetPixel
   ' param x, y - position in icon
   ' return color - got color
   color = GraphicsWindow.GetPixel(xIcon + x, yIcon + y)
+  If Text.GetLength(color) = 9 Then
+    color = "#" + Text.GetSubTextToEnd(color, 4)
+  EndIf
 EndSub
 Sub Icon_MouseToXY
   ' param xRel, yRel - position in icon edit field
@@ -1130,6 +1142,77 @@ Sub KB_OnKeyUp
     ctrl = ""
   EndIf
 EndSub
+Sub Macro_Add
+  ' Macro | Add macro
+  ' param msg - message command
+  iMacro = iMacro + 1
+  nMacro = iMacro
+  macro[iMacro] = msg
+  name = "undo"
+  Menu_EnableItem()
+  GraphicsWindow.Title = fname + " * - " + title
+  name = "redo"
+  Menu_DisableItem()
+EndSub
+Sub Macro_Init
+  ' Macro | Initialize
+  macro = ""
+  iMacro = 0
+  nMacro = 0
+  name = "undo"
+  Menu_DisableItem()
+  GraphicsWindow.Title = fname + " - " + title
+  name = "redo"
+  Menu_DisableItem()
+EndSub
+Sub Macro_Redo
+  ' Macro | Redo
+  If iMacro < nMacro Then
+    iMacro = iMacro + 1
+    msg = macro[iMacro]
+    If msg["cmd"] = "pixel" Then
+      x = msg["x"]
+      y = msg["y"]
+      color = msg["to"]
+      Icon_SetPixel()
+    ElseIf debug Then
+      TextWindow.ForegroundColor = "Red"
+      TextWindow.WriteLine("Unknown macro: '" + msg["cmd"] + "'")
+      TextWindow.ForegroundColor = "Gray"
+    EndIf
+    name = "undo"
+    Menu_EnableItem()
+    GraphicsWindow.Title = fname + " * - " + title
+    If iMacro = nMacro Then
+      name = "redo"
+      Menu_DisableItem()
+    EndIf
+  EndIf
+EndSub
+Sub Macro_Undo
+  ' Macro | Undo
+  If 0 < iMacro Then
+    msg = macro[iMacro]
+    If msg["cmd"] = "pixel" Then
+      x = msg["x"]
+      y = msg["y"]
+      color = msg["from"]
+      Icon_SetPixel()
+      iMacro = iMacro - 1
+      name = "redo"
+      Menu_EnableItem()
+      If iMacro = 0 Then
+        name = "undo"
+        Menu_DisableItem()
+        GraphicsWindow.Title = fname + " - " + title
+      EndIf
+    ElseIf debug Then
+      TextWindow.ForegroundColor = "Red"
+      TextWindow.WriteLine("Unknown macro: '" + msg["cmd"] + "'")
+      TextWindow.ForegroundColor = "Gray"
+    EndIf
+  EndIf
+EndSub
 Sub Math_Hex2Dec
   ' Math | Convert hexadecimal to decimal
   ' param sHex
@@ -1150,6 +1233,37 @@ Sub Menu_Draw
     Menu_DrawItem()
   EndFor
   add = "False"
+EndSub
+Sub Menu_EnableItem
+  ' param name - name of the menu item
+  ' param item - array of the menu items
+  ' param nItem - number of the menu items
+  i = 1
+  While (Text.ConvertToLowerCase(item[i]) <> Text.ConvertToLowerCase(name)) And (i <= nItem)
+    i = i + 1
+  EndWhile
+  If (i <= nItem) And (mask[i] <> "") Then
+    Shapes.Remove(mask[i])
+    mask[i] = ""
+  EndIf
+EndSub
+Sub Menu_DisableItem
+  ' param name - name of the menu item
+  ' param item - array of the menu items
+  ' param nItem - number of the menu items
+  i = 1
+  While (Text.ConvertToLowerCase(item[i]) <> Text.ConvertToLowerCase(name)) And (i <= nItem)
+    i = i + 1
+  EndWhile
+  If (i <= nItem) And (mask[i] = "") Then
+    y = Math.Floor((menuHeight - itemSize - 10) / 2)
+    x = (i - 1) * (itemSize + itemGap) + itemGap
+    GraphicsWindow.PenWidth = 0
+    GraphicsWindow.BrushColor = "#EEEEEE"
+    mask[i] = Shapes.AddRectangle(itemSize, itemSize)
+    Shapes.SetOpacity(mask[i], 70)
+    Shapes.Move(mask[i], x, y)
+  EndIf
 EndSub
 Sub Menu_DrawItem
   ' param i - index number of the menu item
@@ -1313,6 +1427,19 @@ Sub Msg_Set
   msgIn = msgIn + 1
   message[msgIn] = param
 EndSub
+Sub Parse_Comment
+  ' param buf - buffer to parse
+  ' param p - poiter to the buffer
+  ' return p - updated pointer
+  char = Text.GetSubText(buf, p, 1)
+  If char = "#" Then
+    lenBuf = Text.GetLength(buf)
+    While (char <> LF) And (p < lenBuf)
+      p = p + 1
+      char = Text.GetSubText(buf, p, 1)
+    EndWhile
+  EndIf
+EndSub
 Sub Parse_Decimal
   ' param buf - buffer to parse
   ' param p - poiter to the buffer
@@ -1352,7 +1479,7 @@ Sub Parse_PPM
   p = 1
   Parse_MagicNumber()
   If match Then
-    Parse_WhiteSpace()
+    Parse_WhiteSpaceAndComment()
   EndIf
   If match Then
     Parse_Decimal()
@@ -1363,7 +1490,7 @@ Sub Parse_PPM
     EndIf
   EndIf
   If match Then
-    Parse_WhiteSpace()
+    Parse_WhiteSpaceAndComment()
   EndIf
   If match Then
     Parse_Decimal()
@@ -1374,7 +1501,7 @@ Sub Parse_PPM
     EndIf
   EndIf
   If match Then
-    Parse_WhiteSpace()
+    Parse_WhiteSpaceAndComment()
   EndIf
   If match Then
     Parse_Decimal()
@@ -1387,27 +1514,30 @@ Sub Parse_PPM
     EndIf
   EndIf
   If match Then
+    Parse_WhiteSpaceAndComment()
+  EndIf
+  If match Then
     Icon_Clear()
     For y = 0 To iconHeight - 1
       For x = 0 To iconWidth - 1
         Parse_WhiteSpace()
         Parse_Decimal()
         If match Then
-          iR = dec
+          iR = Math.Floor(255 * dec / maxVal)
         Else
           Goto PPPM_Error
         EndIf
         Parse_WhiteSpace()
         Parse_Decimal()
         If match Then
-          iG = dec
+          iG = Math.Floor(255 * dec / maxVal)
         Else
           Goto PPPM_Error
         EndIf
         Parse_WhiteSpace()
         Parse_Decimal()
         If match Then
-          iB = dec
+          iB = Math.Floor(255 * dec / maxVal)
         Else
           Goto PPPM_Error
         EndIf
@@ -1427,6 +1557,24 @@ Sub Parse_WhiteSpace
   While isSpace
     char = Text.GetSubText(buf, p, 1)
     If Text.IsSubText(" " + TAB + CR + LF, char) Then
+      p = p + 1
+    Else
+      isSpace = "False"
+    EndIf
+  EndWhile
+  match = "True"
+EndSub
+Sub Parse_WhiteSpaceAndComment
+  ' param buf - buffer to parse
+  ' param p - poiter to the buffer
+  ' return p - updated pointer
+  ' return match - "True"
+  isSpace = "True"
+  While isSpace
+    char = Text.GetSubText(buf, p, 1)
+    If char = "#" Then
+      Parse_Comment()
+    ElseIf Text.IsSubText(" " + TAB + CR + LF, char) Then
       p = p + 1
     Else
       isSpace = "False"
