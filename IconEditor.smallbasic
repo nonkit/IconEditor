@@ -1,21 +1,17 @@
 ' 16x16 Plain PPM Icon Editor
 ' Copyright © 2015 Nonki Takahashi.  The MIT License.
-' Version 0.6b
-' Last update 2015-02-23
-' Program ID RFT686-3
+' Version 0.7b
+' Last update 2015-03-14
+' Program ID RFT686-6
 ' Repository https://iconeditorsb.codeplex.com/
 '
 ' TODO:
-'  [✓] #12 Support maxval in PPM
-'  [✓] #11 Support comment in PPM
 '  [ ] #10 Support other image format in Open
 '  [ ] #9 Workaround for Silverlight
 '  [ ] #8 Add unit test feature
-'  [✓] #5 Add redo command
-'  [✓] #4 Add undo command
 '
 ' set graphics window title
-title = "Icon Editor 0.6b"
+title = "Icon Editor 0.7b"
 fname = "Untitled"
 GraphicsWindow.Title = fname + " - " + title
 ' define variables as constants or functions
@@ -1116,7 +1112,6 @@ Sub KB_InKey
   ' return c - input key
   If keyOut < keyIn Then
     keyOut = keyOut + 1
-    Program.Delay(1)  ' workaround 29976
     c = fifo[keyOut]
     'fifo[keyOut] = ""
   EndIf
@@ -1129,8 +1124,9 @@ Sub KB_OnKeyDown
   ElseIf key = "LeftCtrl" Or key = "RightCtrl" Then
     ctrl = "^"
   Else
+    ' solution for known issue 29976 (keyIn increment moved after fifo update)
+    fifo[keyIn + 1] = shift + ctrl + key
     keyIn = keyIn + 1
-    fifo[keyIn] = shift + ctrl + key
   EndIf
 EndSub
 Sub KB_OnKeyUp
