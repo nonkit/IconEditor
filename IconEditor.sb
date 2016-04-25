@@ -1,18 +1,18 @@
 ''' Plain PPM Editor
-''' Version 0.8b
+''' Version 0.9b
 ''' Copyright © 2015-2016 Nonki Takahashi.  The MIT License.
 ''' Last update 2016-04-25
-''' Program ID RFT686-7
+''' Program ID RFT686-8
 ''' Repository https://iconeditorsb.codeplex.com/
 '
 ' TODO:
-'  [✓] #14 Support 32x32 bitmap
+'  [✓] #15 Bug fixed - saved PPM has wrong dimension
 '  [ ] #10 Support other image format in Open
 '  [ ] #9 Workaround for Silverlight
 '  [ ] #8 Add unit test feature
 '
 ' set graphics window title
-title = "Icon Editor 0.8b"
+title = "Icon Editor 0.9b"
 fname = "Untitled"
 GraphicsWindow.Title = fname + " - " + title
 ' define variables as constants or functions
@@ -873,7 +873,7 @@ Sub File_GeneratePPM
   ''' File | Generate PPM in buf
   ''' return buf - buffer
   buf = "P3" + CR + LF
-  buf = buf + "16 16" + CR + LF
+  buf = buf + iconWidth + " " + iconHeight + CR + LF
   buf = buf + "255" + CR + LF
   nRGB = 0
   For y = 0 To iconHeight - 1
