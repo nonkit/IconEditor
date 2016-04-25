@@ -1,17 +1,18 @@
-' 16x16 Plain PPM Icon Editor
-' Copyright © 2015 Nonki Takahashi.  The MIT License.
-' Version 0.7b
-' Last update 2015-03-14
-' Program ID RFT686-6
-' Repository https://iconeditorsb.codeplex.com/
+''' Plain PPM Editor
+''' Version 0.8b
+''' Copyright © 2015-2016 Nonki Takahashi.  The MIT License.
+''' Last update 2016-04-25
+''' Program ID RFT686-7
+''' Repository https://iconeditorsb.codeplex.com/
 '
 ' TODO:
+'  [✓] #14 Support 32x32 bitmap
 '  [ ] #10 Support other image format in Open
 '  [ ] #9 Workaround for Silverlight
 '  [ ] #8 Add unit test feature
 '
 ' set graphics window title
-title = "Icon Editor 0.7b"
+title = "Icon Editor 0.8b"
 fname = "Untitled"
 GraphicsWindow.Title = fname + " - " + title
 ' define variables as constants or functions
@@ -135,17 +136,22 @@ While "True"
   EndIf
 EndWhile
 Sub Form
+  ''' Draw GUI form
   gw = 598
   gh = 428
   GraphicsWindow.Width = gw
   GraphicsWindow.Height = gh
   GraphicsWindow.BackgroundColor = "DimGray"
-  iconWidth = 16  '40
-  iconHeight = 16 '40
+  sizes[1] = "iw=16;ih=16;dot=16;"
+  sizes[2] = "iw=32;ih=32;dot=8;"
+  sizes[3] = "iw=40;ih=40;dot=6;"
+  id = 2
+  iconWidth = sizes[id]["iw"]
+  iconHeight = sizes[id]["ih"]
   itemSize = 40
   itemGap = 10
   menuHeight = 60
-  size = 16       '6
+  size = sizes[id]["dot"]
   gap = 2
   Menu_Draw()
   xEdit = Math.Floor((gw - (size + gap + 1) * iconWidth) / 2) + iconWidth
@@ -157,6 +163,7 @@ Sub Form
   add = "False"
 EndSub
 Sub New
+  ''' New command - start new icon edit
   yes = "True"
   If Text.IsSubText(GraphicsWindow.Title, "*") Then
     caution = "Are you sure to clear the icon?"
@@ -170,7 +177,7 @@ Sub New
   EndIf
 EndSub
 Sub Open
-  ' open command
+  ''' Open command - open PPM file
   File_Open()
   Parse_PPM()
   If match And relPath <> "" Then
@@ -179,14 +186,15 @@ Sub Open
   EndIf
 EndSub
 Sub Save
-  ' save command
+  ''' Save command - save PPM file
   File_GeneratePPM()
   File_Save()
 EndSub
 Sub Array_GetIndexOfValue
-  ' param arry - array
-  ' param value - value to get index
-  ' return index - index if found or "" if not found
+  ''' Array | Get index of value
+  ''' param arry - array
+  ''' param value - value to get index
+  ''' return index - index if found or "" if not found
   nValue = Array.GetItemCount(arry)
   indices = Array.GetAllIndices(arry)
   index = ""
@@ -198,9 +206,9 @@ Sub Array_GetIndexOfValue
   EndFor
 EndSub
 Sub Color_ColorToRGB
-  ' Color | Convert Color to RGB
-  ' param sColor - "#rrggbb"
-  ' return iR, iG, iB - [0, 255]
+  ''' Color | Convert Color to RGB
+  ''' param sColor - "#rrggbb"
+  ''' return iR, iG, iB - [0, 255]
   sR = Text.GetSubText(sColor, 2, 2)
   sG = Text.GetSubText(sColor, 4, 2)
   sB = Text.GetSubText(sColor, 6, 2)
@@ -215,12 +223,12 @@ Sub Color_ColorToRGB
   iB = iDec
 EndSub
 Sub Color_HSLtoRGB
-  ' Color | Convert HSL to RGB
-  ' param rHue - [0, 360) or UNDEFINED
-  ' param rLightness - [0, 1]
-  ' param rSaturation - [0, 1]
-  ' return iR, iG, iB - RGB color
-  ' return sColor - "#rrggbb"
+  ''' Color | Convert HSL to RGB
+  ''' param rHue - [0, 360) or UNDEFINED
+  ''' param rLightness - [0, 1]
+  ''' param rSaturation - [0, 1]
+  ''' return iR, iG, iB - RGB color
+  ''' return sColor - "#rrggbb"
   If rLightness <= 0.5 Then
     rN2 = rLightness * (1 + rSaturation)
   Else
@@ -245,16 +253,17 @@ Sub Color_HSLtoRGB
   sColor = GraphicsWindow.GetColorFromRGB(iR, iG, iB)
 EndSub
 Sub Color_Init
+  ''' Color | Initialize for colors
   Popup_Init()
   Color_SetPenColor()
   CS_InitPalette()          ' initialize palette for color slider
 EndSub
 Sub Color_RGBtoHSL
-  ' Color | Convert RGB to HSL
-  ' param sColor - "#rrggbb"
-  ' return rHue - [0, 360) or UNDEFINED
-  ' return rLightness - (0, 1)
-  ' return rSaturation - (0, 1)
+  ''' Color | Convert RGB to HSL
+  ''' param sColor - "#rrggbb"
+  ''' return rHue - [0, 360) or UNDEFINED
+  ''' return rLightness - (0, 1)
+  ''' return rSaturation - (0, 1)
   Color_ColorToRGB()
   ' rR = iR / 255 ' occurs Math.Max() bug
   rR = Math.Round(iR / 255 * 10000) / 10000
@@ -299,10 +308,10 @@ Sub Color_RGBtoHSL
   EndIf
 EndSub
 Sub Color_Value
-  ' Color | Function value
-  ' param rN1, rN2
-  ' param rH - [-120, 480)
-  ' return iValue - 0..255
+  ''' Color | Function value
+  ''' param rN1, rN2
+  ''' param rH - [-120, 480)
+  ''' return iValue - 0..255
   If rH >= 360 Then
     rH = rH - 360
   EndIF
@@ -321,12 +330,12 @@ Sub Color_Value
   iValue = Math.Round(rV * 255)
 EndSub
 Sub CS_AddColorToPalette
-  ' Color Selector | Add color to palette
-  ' param color - color to set
-  ' param maxPalette
-  ' param nPalette
-  ' param palette
-  ' param tPalette - target palette
+  ''' Color Selector | Add color to palette
+  ''' param color - color to set
+  ''' param maxPalette
+  ''' param nPalette
+  ''' param palette
+  ''' param tPalette - target palette
   Stack.PushValue("local", i)
   For i = 1 To nPalette
     pltt = palette[i]
@@ -348,8 +357,8 @@ Sub CS_AddColorToPalette
   i = Stack.PopValue("local")
 EndSub
 Sub CS_AdjustSlider
-  ' Color Selector | Adjust slider
-  ' param iSlider - moved slider
+  ''' Color Selector | Adjust slider
+  ''' param iSlider - moved slider
   Stack.PushValue("local", iSlider)
   If iSlider = iHue Or iSlider = iLightness Or iSlider = iSaturation Then
     If iSlider = iHue Then
@@ -392,8 +401,8 @@ Sub CS_AdjustSlider
   iSlider = Stack.PopValue("local")
 EndSub
 Sub CS_DoObject
-  ' Color Selector | Do object
-  ' param - obj
+  ''' Color Selector | Do object
+  ''' param - obj
   While obj <> ""
     CS_DoSlider()
     If obj <> "" Then
@@ -402,8 +411,8 @@ Sub CS_DoObject
   EndWhile
 EndSub
 Sub CS_DoPalette
-  ' Color Selector | Do palette
-  ' param obj - clicked object
+  ''' Color Selector | Do palette
+  ''' param obj - clicked object
   If Text.StartsWith(obj, "palette") Then
     iPalette = Text.GetSubTextToEnd(obj, 8)
     pltt = palette[iPalette]
@@ -417,9 +426,9 @@ Sub CS_DoPalette
   EndIf
 EndSub
 Sub CS_DoSlider
-  ' Color Selector | Do slider
-  ' param obj - clicked object
-  ' param iSlider - index of slider
+  ''' Color Selector | Do slider
+  ''' param obj - clicked object
+  ''' param iSlider - index of slider
   If Text.StartsWith(obj, "slider") Then
     Slider_WaitToRelease()
     obj = ""
@@ -428,10 +437,10 @@ Sub CS_DoSlider
   EndIf
 EndSub
 Sub CS_DrawColorRect
-  ' Color Selector | Draw color rectangle
-  ' param color - color of rectangle
-  ' param x, y, width, height - position and size of rectangle
-  ' return oRect - rectangle object
+  ''' Color Selector | Draw color rectangle
+  ''' param color - color of rectangle
+  ''' param x, y, width, height - position and size of rectangle
+  ''' return oRect - rectangle object
   GraphicsWindow.BrushColor = color
   GraphicsWindow.PenColor = BORDERCOLOR
   If oRect <> "" Then
@@ -441,11 +450,11 @@ Sub CS_DrawColorRect
   Shapes.Move(oRect, x, y)
 EndSub
 Sub CS_DrawPalette
-  ' Color Selector | Draw palette
-  ' param palette[] - color palette
-  ' param nPalette - number of color in palette
-  ' param x, y, width, height - position and size of rectangle
-  ' return oPalette[] - palette object array
+  ''' Color Selector | Draw palette
+  ''' param palette[] - color palette
+  ''' param nPalette - number of color in palette
+  ''' param x, y, width, height - position and size of rectangle
+  ''' return oPalette[] - palette object array
   Stack.PushValue("local", i)
   GraphicsWindow.PenColor = BORDERCOLOR
   For i = 1 To nPalette
@@ -464,8 +473,8 @@ Sub CS_DrawPalette
   i = Stack.PopValue("local")
 EndSub
 Sub CS_GetColorFromSlider
-  ' Color Selector | get color from slider
-  ' return color
+  ''' Color Selector | get color from slider
+  ''' return color
   Stack.PushValue("local", iSlider)
   iSlider = iRed    ' slider index
   Slider_GetLevel()
@@ -480,7 +489,7 @@ Sub CS_GetColorFromSlider
   iSlider = Stack.PopValue("local")
 EndSub
 Sub CS_Init
-  ' Color Selector | Initialize sliders
+  ''' Color Selector | Initialize sliders
   width = 256
   min = 0
   max = 255
@@ -536,15 +545,15 @@ Sub CS_Init
   Shapes.Move(oNewColor, LEFTX, top)
 EndSub
 Sub CS_DumpSlider
-  ' Color Selector | Dump slider for debug
+  ''' Color Selector | Dump slider for debug
   For i = 1 To numSlider
     TextWindow.WriteLine("slider" + i)
     TextWindow.WriteLine(slider[i])
   EndFor
 EndSub
 Sub CS_InitPalette
-  ' Color Selector | Initialize palette
-  ' This subroutine should be called before CS_ShowPopup().
+  ''' Color Selector | Initialize palette
+  ''' This subroutine should be called before CS_ShowPopup().
   pcolor = GraphicsWindow.PenColor
   If Text.GetLength(pcolor) = 9 Then      ' for Silverlight
     pcolor = "#" + Text.GetSubText(pcolor, 4, 6)
@@ -557,9 +566,9 @@ Sub CS_InitPalette
   palette[1] = pltt
 EndSub
 Sub CS_RemovePalette
-  ' Color Selector | Remove palette
-  ' param nPalette - number of color in palette
-  ' return oPalette[] - palette object array
+  ''' Color Selector | Remove palette
+  ''' param nPalette - number of color in palette
+  ''' return oPalette[] - palette object array
   Stack.PushValue("local", i)
   For i = 1 To nPalette
     oPalette = "Palette" + i
@@ -569,18 +578,18 @@ Sub CS_RemovePalette
   i = Stack.PopValue("local")
 EndSub
 Sub CS_RemoveSliders
-  ' Color Selector | Remove sliders
+  ''' Color Selector | Remove sliders
   For iSlider = 1 To numSlider
     Slider_Remove()
   EndFor
   numSlider = 0
 EndSub
 Sub CS_SearchClickedObject
-  ' Color Selector | Check slider clicked
-  ' param mxD, myD - clicked point
-  ' return obj - clicked slider or palette
-  ' return iSlider - index if obj is slider
-  ' return iPalette - index if obj is palette
+  ''' Color Selector | Check slider clicked
+  ''' param mxD, myD - clicked point
+  ''' return obj - clicked slider or palette
+  ''' return iSlider - index if obj is slider
+  ''' return iPalette - index if obj is palette
   Stack.PushValue("local", i)
   For iSlider = 1 To numSlider
     obj = "slider" + iSlider
@@ -609,8 +618,8 @@ Sub CS_SearchClickedObject
   i = Stack.PopValue("local")
 EndSub
 Sub CS_SetColorToSlider
-  ' Color Selector | Set color to slider
-  ' param color
+  ''' Color Selector | Set color to slider
+  ''' param color
   Stack.PushValue("local", iSlider)
   sColor = color
   Color_ColorToRGB()
@@ -627,15 +636,15 @@ Sub CS_SetColorToSlider
   iSlider = Stack.PopValue("local")
 EndSub
 Sub CS_ShowNewColor
-  ' Color Selector | Show new color
-  ' param oColor
-  ' param color
+  ''' Color Selector | Show new color
+  ''' param oColor
+  ''' param color
   Shapes.SetText(oNewColor, color)
 EndSub
 Sub CS_ShowPopup
-  ' Color Selector | Show popup
-  ' param color - current color
-  ' return color - new color
+  ''' Color Selector | Show popup
+  ''' param color - current color
+  ''' return color - new color
   ' define constant
   Stack.PushValue("local", cont)
   fs = 12
@@ -712,7 +721,7 @@ Sub CS_ShowPopup
   cont = Stack.PopValue("local")
 EndSub
 Sub CS_OnButtonClicked
-  ' Color Selector | Event handler on button clicked
+  ''' Color Selector | Event handler on button clicked
   cont = "False"
   If Controls.LastClickedButton = oCancel Then
     cancel = "True"
@@ -721,7 +730,8 @@ Sub CS_OnButtonClicked
   EndIf
 EndSub
 Sub Color_SetPenColor
-  ' param pcolor
+  ''' Color | Set pen color
+  ''' param pcolor
   GraphicsWindow.BrushColor = pcolor
   padding = 4
   arry = item
@@ -732,8 +742,8 @@ Sub Color_SetPenColor
   GraphicsWindow.FillRectangle(x, y, itemSize - 2 * padding, itemSize - 2 * padding)
 EndSub
 Sub Debug_StateChanged
-  ' Debug | Check state changed
-  ' return changed - "True" if state changed
+  ''' Debug | Check state changed
+  ''' return changed - "True" if state changed
   changed = "False"
   If keyIn <> lastKeyIn Then
     lastKeyIn = keyIn
@@ -753,7 +763,7 @@ Sub Debug_StateChanged
   EndIf
 EndSub
 Sub Debug_Dump
-  ' Debug | Dump state
+  ''' Debug | Dump state
   TextWindow.WriteLine("fifo = " + fifo)
   TextWindow.WriteLine("keyIn = " + keyIn)
   TextWindow.WriteLine("keyOut = " + keyOut)
@@ -762,8 +772,8 @@ Sub Debug_Dump
   TextWindow.WriteLine("msgOut = " + msgOut)
 EndSub
 Sub Dialog_YesNo
-  ' param caution - message
-  ' return yes - if [Yes] pushed
+  ''' param caution - message
+  ''' return yes - if [Yes] pushed
   yes = "True"
   GraphicsWindow.PenWidth = 0
   GraphicsWindow.BrushColor = POPUPCOLOR
@@ -789,9 +799,9 @@ Sub Dialog_YesNo
   Shapes.Remove(oMsgBox)
 EndSub
 Sub File_GetAbsPath
-  ' param curDir - current directory
-  ' param relPath - relative path
-  ' return absPath - absolute path
+  ''' param curDir - current directory
+  ''' param relPath - relative path
+  ''' return absPath - absolute path
   If Text.IsSubText(relPath, ":") Or Text.StartsWith(relPath, "\") Or relPath = "" Then
     absPath = relPath
   Else
@@ -800,8 +810,8 @@ Sub File_GetAbsPath
   EndIf
 EndSub
 Sub File_RemoveDots
-  ' param absPath - with dots
-  ' return absPath - without dots
+  ''' param absPath - with dots
+  ''' return absPath - without dots
   path = absPath
   folder = ""
   n = 0
@@ -834,10 +844,10 @@ Sub File_RemoveDots
   EndFor
 EndSub
 Sub File_RemoveEntry
-  ' param folder - entry array
-  ' param i - entry index
-  ' return folder - updated entry array
-  ' return n
+  ''' param folder - entry array
+  ''' param i - entry index
+  ''' return folder - updated entry array
+  ''' return n
   For _i = i To n - 1
     folder[_i] = folder[_i + 1]
   EndFor
@@ -845,13 +855,13 @@ Sub File_RemoveEntry
   n = n - 1
 EndSub
 Sub File_CloseDialog
-  ' File | Close dialog for Open/Save
-  ' param oPopup
-  ' param oCaption
-  ' param oFilename
-  ' param oText
-  ' param oMsg
-  ' param oCancel
+  ''' File | Close dialog for Open/Save
+  ''' param oPopup
+  ''' param oCaption
+  ''' param oFilename
+  ''' param oText
+  ''' param oMsg
+  ''' param oCancel
   Controls.Remove(oCancel)
   Controls.Remove(oMsg)
   Controls.Remove(oText)
@@ -860,8 +870,8 @@ Sub File_CloseDialog
   Controls.Remove(oPopup)
 EndSub
 Sub File_GeneratePPM
-  ' File | Generate PPM in buf
-  ' return buf - buffer
+  ''' File | Generate PPM in buf
+  ''' return buf - buffer
   buf = "P3" + CR + LF
   buf = buf + "16 16" + CR + LF
   buf = buf + "255" + CR + LF
@@ -891,10 +901,10 @@ Sub File_GeneratePPM
   EndFor
 EndSub
 Sub File_GetBasename
-  ' FIle | Get basename from filename
-  ' param filename
-  ' return basename
-  ' return ext - extension
+  ''' FIle | Get basename from filename
+  ''' param filename
+  ''' return basename
+  ''' return ext - extension
   pFilename = 1
   While Text.IsSubText(Text.GetSubTextToEnd(filename, pFilename), "\")
     iBackslash = Text.GetIndexOf(Text.GetSubTextToEnd(filename, pFilename), "\")
@@ -910,9 +920,9 @@ Sub File_GetBasename
   EndIf
 EndSub
 Sub File_Open
-  ' File | Show input code to open
-  ' return buf
-  ' return filename
+  ''' File | Show input code to open
+  ''' return buf
+  ''' return filename
   Stack.PushValue("local", cont)
   relPath = ""
   filename = ""
@@ -957,14 +967,14 @@ Sub File_Open
   cont = Stack.PopValue("local")
 EndSub
 Sub File_OpenDialog
-  ' File | Open dialog and common parts for Open/Save
-  ' param relPath
-  ' return oPopup
-  ' return oCaption
-  ' return oFilename
-  ' return oText
-  ' return oMsg
-  ' return oCancel
+  ''' File | Open dialog and common parts for Open/Save
+  ''' param relPath
+  ''' return oPopup
+  ''' return oCaption
+  ''' return oFilename
+  ''' return oText
+  ''' return oMsg
+  ''' return oCancel
   GraphicsWindow.PenWidth = 0
   GraphicsWindow.BrushColor = POPUPCOLOR
   oPopup = Shapes.AddRectangle(gw, gh)
@@ -988,9 +998,9 @@ Sub File_OpenDialog
   oCancel = Controls.AddButton("Cancel", 535, gh - 34)
 EndSub
 Sub File_Save
-  ' File | Show output code to save
-  ' param buf - program buffer
-  ' param filename
+  ''' File | Show output code to save
+  ''' param buf - program buffer
+  ''' param filename
   Stack.PushValue("local", cont)
   File_OpenDialog()
   Controls.SetTextBoxText(oText, buf)
@@ -1036,17 +1046,18 @@ Sub File_Save
   cont = Stack.PopValue("local")
 EndSub
 Sub File_OnButtonClicked
-  ' File | Button event handler
+  ''' File | Button event handler
   cont = "False"
 EndSub
 Sub File_OnTextTyped
-  ' File | Textbox event handler
+  ''' File | Textbox event handler
   If Controls.LastTypedTextBox = oFilename Then
     typed = "True"
   EndIf
 EndSub
 Sub Icon_Clear
-  ' param add - "True" to add menu to mouse object
+  '' Icon | Clear icon
+  ''' param add - "True" to add menu to mouse object
   GraphicsWindow.BrushColor = "White"
   GraphicsWindow.FillRectangle(xIcon, yIcon, iconWidth, iconHeight)
   For row = 0 To iconHeight - 1
@@ -1067,16 +1078,18 @@ Sub Icon_Clear
   EndIf
 EndSub
 Sub Icon_GetPixel
-  ' param x, y - position in icon
-  ' return color - got color
+  ''' Icon | Get pixel
+  ''' param x, y - position in icon
+  ''' return color - got color
   color = GraphicsWindow.GetPixel(xIcon + x, yIcon + y)
   If Text.GetLength(color) = 9 Then
     color = "#" + Text.GetSubTextToEnd(color, 4)
   EndIf
 EndSub
 Sub Icon_MouseToXY
-  ' param xRel, yRel - position in icon edit field
-  ' return x, y - pixel of the icon or (-1, -1) if on the grid
+  ''' Icon | Calc x, y position in icon from mouse position
+  ''' param xRel, yRel - position in icon edit field
+  ''' return x, y - pixel of the icon or (-1, -1) if on the grid
   x = Math.Floor(xRel / (size + gap))
   y = Math.Floor(yRel / (size + gap))
   If (iconWidth - 1 < x) Or (iconHeight - 1 < y) Then
@@ -1092,14 +1105,15 @@ Sub Icon_MouseToXY
   EndIf
 EndSub
 Sub Icon_SetPixel
-  ' param x, y - position in icon
-  ' param color - set color
+  ''' Icon | Set pixel
+  ''' param x, y - position in icon
+  ''' param color - set color
   GraphicsWindow.SetPixel(xIcon + x, yIcon + y, color)
   GraphicsWindow.BrushColor = color
   GraphicsWindow.FillRectangle(xEdit + x * (size + gap), yEdit + y * (size + gap), size, size)
 EndSub
 Sub KB_Init
-  ' Keyboard | Initialization (use only ^n, ^o, ^s, ^z, ^y)
+  ''' Keyboard | Initialization (use only ^n, ^o, ^s, ^z, ^y)
   shift = ""
   ctrl = ""
   keyIn = 0
@@ -1108,8 +1122,8 @@ Sub KB_Init
   GraphicsWindow.KeyUp = KB_OnKeyUp
 EndSub
 Sub KB_InKey
-  ' Keyboard | In key
-  ' return c - input key
+  ''' Keyboard | In key
+  ''' return c - input key
   If keyOut < keyIn Then
     keyOut = keyOut + 1
     c = fifo[keyOut]
@@ -1117,7 +1131,7 @@ Sub KB_InKey
   EndIf
 EndSub
 Sub KB_OnKeyDown
-  ' Keyboard | Key down event handler
+  ''' Keyboard | Key down event handler
   key = GraphicsWindow.LastKey
   If key = "LeftShift" Or key = "RightShift" Or key = "Shift" Then
     shift = "+"
@@ -1130,7 +1144,7 @@ Sub KB_OnKeyDown
   EndIf
 EndSub
 Sub KB_OnKeyUp
-  ' Keyboard | Key up event handler
+  ''' Keyboard | Key up event handler
   key = GraphicsWindow.LastKey
   If key = "LeftShift" Or key = "RightShift" Or key = "Shift" Then
     shift = ""
@@ -1139,8 +1153,8 @@ Sub KB_OnKeyUp
   EndIf
 EndSub
 Sub Macro_Add
-  ' Macro | Add macro
-  ' param msg - message command
+  ''' Macro | Add macro
+  ''' param msg - message command
   iMacro = iMacro + 1
   nMacro = iMacro
   macro[iMacro] = msg
@@ -1151,7 +1165,7 @@ Sub Macro_Add
   Menu_DisableItem()
 EndSub
 Sub Macro_Init
-  ' Macro | Initialize
+  ''' Macro | Initialize
   macro = ""
   iMacro = 0
   nMacro = 0
@@ -1162,7 +1176,7 @@ Sub Macro_Init
   Menu_DisableItem()
 EndSub
 Sub Macro_Redo
-  ' Macro | Redo
+  ''' Macro | Redo
   If iMacro < nMacro Then
     iMacro = iMacro + 1
     msg = macro[iMacro]
@@ -1186,7 +1200,7 @@ Sub Macro_Redo
   EndIf
 EndSub
 Sub Macro_Undo
-  ' Macro | Undo
+  ''' Macro | Undo
   If 0 < iMacro Then
     msg = macro[iMacro]
     If msg["cmd"] = "pixel" Then
@@ -1210,9 +1224,9 @@ Sub Macro_Undo
   EndIf
 EndSub
 Sub Math_Hex2Dec
-  ' Math | Convert hexadecimal to decimal
-  ' param sHex
-  ' return iDec
+  ''' Math | Convert hexadecimal to decimal
+  ''' param sHex
+  ''' return iDec
   iDec = 0
   iLen = Text.GetLength(sHex)
   For iPtr = 1 To iLen
@@ -1220,6 +1234,7 @@ Sub Math_Hex2Dec
   EndFor
 EndSub
 Sub Menu_Draw
+  ''' Menu | draw menu
   GraphicsWindow.BrushColor = "#EEEEEE"
   GraphicsWindow.FillRectangle(0, 0, gw, menuHeight)
   item = "1=New;2=Open;3=Save;4=Undo;5=Redo;6=Pen Color;"
@@ -1231,9 +1246,10 @@ Sub Menu_Draw
   add = "False"
 EndSub
 Sub Menu_EnableItem
-  ' param name - name of the menu item
-  ' param item - array of the menu items
-  ' param nItem - number of the menu items
+  ''' Menu | Enable item
+  ''' param name - name of the menu item
+  ''' param item - array of the menu items
+  ''' param nItem - number of the menu items
   i = 1
   While (Text.ConvertToLowerCase(item[i]) <> Text.ConvertToLowerCase(name)) And (i <= nItem)
     i = i + 1
@@ -1244,9 +1260,10 @@ Sub Menu_EnableItem
   EndIf
 EndSub
 Sub Menu_DisableItem
-  ' param name - name of the menu item
-  ' param item - array of the menu items
-  ' param nItem - number of the menu items
+  ''' Menu | Disable item
+  ''' param name - name of the menu item
+  ''' param item - array of the menu items
+  ''' param nItem - number of the menu items
   i = 1
   While (Text.ConvertToLowerCase(item[i]) <> Text.ConvertToLowerCase(name)) And (i <= nItem)
     i = i + 1
@@ -1262,8 +1279,9 @@ Sub Menu_DisableItem
   EndIf
 EndSub
 Sub Menu_DrawItem
-  ' param i - index number of the menu item
-  ' param add - "True" to add menu to mouse object
+  ''' Menu | Draw menu item
+  ''' param i - index number of the menu item
+  ''' param add - "True" to add menu to mouse object
   y = Math.Floor((menuHeight - itemSize - 10) / 2)
   x = (i - 1) * (itemSize + itemGap) + itemGap
   url = "http://www.nonkit.com/smallbasic.files/" + Text.ConvertToLowerCase(item[i]) + ".png"
@@ -1288,22 +1306,23 @@ Sub Menu_DrawItem
   GraphicsWindow.DrawText(x + dx, y + itemSize, item[i])
 EndSub
 Sub Mouse_AddObject
-  ' Mouse | Add object to click
-  ' param["name"] - name of the object to add
-  ' param["xLeft"] - left x coordinate of the object
-  ' param["xRight"] - right x coordinate of the object
-  ' param["yTop"] - top y coordinate of the object
-  ' param["yBottom"] - bottom y coordinate of the object
-  ' return object
-  ' return nObject
+  ''' Mouse | Add object to click
+  ''' param["name"] - name of the object to add
+  ''' param["xLeft"] - left x coordinate of the object
+  ''' param["xRight"] - right x coordinate of the object
+  ''' param["yTop"] - top y coordinate of the object
+  ''' param["yBottom"] - bottom y coordinate of the object
+  ''' return object
+  ''' return nObject
   nObject = nObject + 1
   object[nObject] = param
 EndSub
 Sub Mouse_DetectObject
-  ' param mxD, myD - mouse clicked coordinate
-  ' return name - clicked object name if found, "" if not found
-  ' return xRel - relative x coordinate from left x of the object 
-  ' return yRel - relative y coordinate from top y of the object
+  ''' Mouse | Detect object
+  ''' param mxD, myD - mouse clicked coordinate
+  ''' return name - clicked object name if found, "" if not found
+  ''' return xRel - relative x coordinate from left x of the object 
+  ''' return yRel - relative y coordinate from top y of the object
   name = ""               ' not found
   For iObject = 1 To nObject
     obj = object[iObject]
@@ -1316,7 +1335,7 @@ Sub Mouse_DetectObject
   EndFor
 EndSub
 Sub Mouse_Init
-  ' Mouse | Initialize for common event handler
+  ''' Mouse | Initialize for common event handler
   clicked = "False"
   released = "False"
   moved = "False"
@@ -1325,14 +1344,14 @@ Sub Mouse_Init
   GraphicsWindow.MouseDown = Mouse_OnDown
 EndSub
 Sub Mouse_SetHandler
-  ' Mouse | Set or reset common event handler
-  ' param["down"] - "True" if set, "False" if reset
-  ' param["move"] - "True" if set, "False" if reset
-  ' param["up"] -  - "True" if set, "False" if reset
-  ' return clicked - "False" if set MouseDown
-  ' return moved - "False" if set MouseMove
-  ' return released - "False" if set MouseUp
-  ' return dmu - which handlers are set for debug
+  ''' Mouse | Set or reset common event handler
+  ''' param["down"] - "True" if set, "False" if reset
+  ''' param["move"] - "True" if set, "False" if reset
+  ''' param["up"] -  - "True" if set, "False" if reset
+  ''' return clicked - "False" if set MouseDown
+  ''' return moved - "False" if set MouseMove
+  ''' return released - "False" if set MouseUp
+  ''' return dmu - which handlers are set for debug
   If param["up"] Then
     released = "False"
     GraphicsWindow.MouseUp = Mouse_OnUp
@@ -1363,8 +1382,8 @@ Sub Mouse_SetHandler
   EndIf
 EndSub
 Sub Mouse_OnDown
-  ' Mouse | Common event handler on mouse down
-  ' return mxD, myD - position on mouse down
+  ''' Mouse | Common event handler on mouse down
+  ''' return mxD, myD - position on mouse down
   mxD = Math.Floor(GraphicsWindow.MouseX)
   myD = Math.Floor(GraphicsWindow.MouseY)
   clicked = "True"
@@ -1374,11 +1393,11 @@ Sub Mouse_OnDown
   EndIf
 EndSub
 Sub Mouse_DoNothing
-  ' Mouse | Common event handler to do nothing
+  ''' Mouse | Common event handler to do nothing
 EndSub
 Sub Mouse_OnMove
-  ' Mouse | Common event handler on mouse move
-  ' return mxM, myM - position on mouse move
+  ''' Mouse | Common event handler on mouse move
+  ''' return mxM, myM - position on mouse move
   mxM = Math.Floor(GraphicsWindow.MouseX)
   myM = Math.Floor(GraphicsWindow.MouseY)
   moved = "True"
@@ -1387,7 +1406,7 @@ Sub Mouse_OnMove
   EndIf
 EndSub
 Sub Mouse_OnTick
-  ' Mouse | debug routine
+  ''' Mouse | debug routine
   If clicked Then
     cmr = "C"
   Else
@@ -1402,8 +1421,8 @@ Sub Mouse_OnTick
   GraphicsWindow.Title = title + smrc + " " + dmu + " " + cmr
 EndSub
 Sub Mouse_OnUp
-  ' Mouse | Common event handler on mouse up
-  ' return mxU, myU - position on mouse up
+  ''' Mouse | Common event handler on mouse up
+  ''' return mxU, myU - position on mouse up
   mxU = Math.Floor(GraphicsWindow.MouseX)
   myU = Math.Floor(GraphicsWindow.MouseY)
   released = "True"
@@ -1412,21 +1431,22 @@ Sub Mouse_OnUp
   EndIf
 EndSub
 Sub Msg_Init
-  ' Message | Initialize
+  ''' Message | Initialize
   msgIn = 0
   msgOut = 0
 EndSub
 Sub Msg_Set
-  ' Message | Set message to fifo
-  ' param["cmd"] - massage command
-  ' param["*"].. - message operands
+  ''' Message | Set message to fifo
+  ''' param["cmd"] - massage command
+  ''' param["*"].. - message operands
   msgIn = msgIn + 1
   message[msgIn] = param
 EndSub
 Sub Parse_Comment
-  ' param buf - buffer to parse
-  ' param p - poiter to the buffer
-  ' return p - updated pointer
+  ''' Parse | Parse comment
+  ''' param buf - buffer to parse
+  ''' param p - poiter to the buffer
+  ''' return p - updated pointer
   char = Text.GetSubText(buf, p, 1)
   If char = "#" Then
     lenBuf = Text.GetLength(buf)
@@ -1437,11 +1457,12 @@ Sub Parse_Comment
   EndIf
 EndSub
 Sub Parse_Decimal
-  ' param buf - buffer to parse
-  ' param p - poiter to the buffer
-  ' return p - updated pointer
-  ' return dec - decimal number
-  ' return match - "True" if match
+  ''' Parse | Parse decimal
+  ''' param buf - buffer to parse
+  ''' param p - poiter to the buffer
+  ''' return p - updated pointer
+  ''' return dec - decimal number
+  ''' return match - "True" if match
   match = "False"
   isDigit = "True"
   dec = 0
@@ -1457,10 +1478,11 @@ Sub Parse_Decimal
   EndWhile
 EndSub
 Sub Parse_MagicNumber
-  ' param buf - buffer to parse
-  ' param p - poiter to the buffer
-  ' return p - updated pointer
-  ' return match - "True" if match
+  ''' Parse | Parse magic number
+  ''' param buf - buffer to parse
+  ''' param p - poiter to the buffer
+  ''' return p - updated pointer
+  ''' return match - "True" if match
   If Text.StartsWith(Text.GetSubTextToEnd(buf, p), "P3") Then
     p = p + 2
     match = "True"
@@ -1469,9 +1491,10 @@ Sub Parse_MagicNumber
   EndIf
 EndSub
 Sub Parse_PPM
-  ' param buf - buffer to parse
-  ' return p - updated pointer
-  ' return match - "True" if match
+  ''' Parse | Parse PPM
+  ''' param buf - buffer to parse
+  ''' return p - updated pointer
+  ''' return match - "True" if match
   p = 1
   Parse_MagicNumber()
   If match Then
@@ -1545,10 +1568,11 @@ Sub Parse_PPM
   PPPM_Error:
 EndSub
 Sub Parse_WhiteSpace
-  ' param buf - buffer to parse
-  ' param p - poiter to the buffer
-  ' return p - updated pointer
-  ' return match - "True"
+  ''' Parse | Parse white space
+  ''' param buf - buffer to parse
+  ''' param p - poiter to the buffer
+  ''' return p - updated pointer
+  ''' return match - "True"
   isSpace = "True"
   While isSpace
     char = Text.GetSubText(buf, p, 1)
@@ -1561,10 +1585,11 @@ Sub Parse_WhiteSpace
   match = "True"
 EndSub
 Sub Parse_WhiteSpaceAndComment
-  ' param buf - buffer to parse
-  ' param p - poiter to the buffer
-  ' return p - updated pointer
-  ' return match - "True"
+  ''' Parse | Parse white space and comment
+  ''' param buf - buffer to parse
+  ''' param p - poiter to the buffer
+  ''' return p - updated pointer
+  ''' return match - "True"
   isSpace = "True"
   While isSpace
     char = Text.GetSubText(buf, p, 1)
@@ -1579,6 +1604,7 @@ Sub Parse_WhiteSpaceAndComment
   match = "True"
 EndSub
 Sub Popup_Init
+  ''' Popup | Initialize popup
   TOPY = 10   ' top y
   LEFTX = 10  ' left x
   DELTAY = 36 ' delta y
@@ -1592,13 +1618,13 @@ Sub Popup_Init
   UNDEFINED = "N/A"
 EndSub
 Sub Slider_Add
-  ' Slider | Add slider as shapes and property
-  ' param width
-  ' param caption
-  ' param min, max
-  ' param left, top
-  ' return slider[] - property of slider
-  ' return iSlider - added slider index
+  ''' Slider | Add slider as shapes and property
+  ''' param width
+  ''' param caption
+  ''' param min, max
+  ''' param left, top
+  ''' return slider[] - property of slider
+  ''' return iSlider - added slider index
   numSlider = numSlider + 1
   iSlider = numSlider
   ' add shapes for slider
@@ -1630,24 +1656,24 @@ Sub Slider_Add
   Slider_SetLevel()
 EndSub
 Sub Slider_CallBack
-  ' Slider | Call back
-  ' param iSlider - changed slider
+  ''' Slider | Call back
+  ''' param iSlider - changed slider
   CS_AdjustSlider()
   CS_GetColorFromSlider()
   CS_ShowNewColor()       ' show new color name
   CS_DrawColorRect()      ' draw new color rectangle
 EndSub
 Sub Slider_GetLevel
-  ' Slider | Get latest level of slider
-  ' param iSlider
-  ' return level
+  ''' Slider | Get latest level of slider
+  ''' param iSlider
+  ''' return level
   sldr = slider[iSlider]
   level = sldr["level"]
 EndSub
 Sub Slider_GetMouseLevel
-  ' Slider | Get mouse level of slider
-  ' param iSlider
-  ' return level
+  ''' Slider | Get mouse level of slider
+  ''' param iSlider
+  ''' return level
   sldr = slider[iSlider]
   x0 = sldr["x0"]
   x1 = sldr["x1"]
@@ -1656,8 +1682,8 @@ Sub Slider_GetMouseLevel
   level = min + Math.Floor((max - min) * (mxM - x0) / (x1 - x0))
 EndSub
 Sub Slider_WaitToRelease
-  ' Slider | Get released point for slider moving
-  ' param iSlider
+  ''' Slider | Get released point for slider moving
+  ''' param iSlider
   param = "down=False;move=True;up=True;"  ' for slider moving / wait to release
   Mouse_SetHandler()
   While Not[released]
@@ -1686,8 +1712,8 @@ Sub Slider_WaitToRelease
   Mouse_SetHandler()
 EndSub
 Sub Slider_Remove
-  ' Slider | Remove a slider
-  ' param iSlider
+  ''' Slider | Remove a slider
+  ''' param iSlider
   sldr = slider[iSlider]
   Shapes.Remove(sldr["oCaption"])
   Shapes.Remove(sldr["oSlit"])
@@ -1695,9 +1721,9 @@ Sub Slider_Remove
   Shapes.Remove(sldr["oLevel"])
 EndSub
 Sub Slider_SetLevel
-  ' Slider | Set slider level and move slider box
-  ' param iSlider
-  ' param level
+  ''' Slider | Set slider level and move slider box
+  ''' param iSlider
+  ''' param level
   Stack.PushValue("local", width)
   sldr = slider[iSlider]
   x0 = sldr["x0"]
@@ -1720,10 +1746,11 @@ Sub Slider_SetLevel
   width = Stack.PopValue("local")
 EndSub
 Sub Text_GetWidthInPx
-  ' param txt - text to get width in px
-  ' param ratio - character width/height in a font
-  ' param fs - font size (height)
-  ' return px - width in px (pixels)
+  ''' Text | Get width in px (pixels)
+  ''' param txt - text to get width in px
+  ''' param ratio - character width/height in a font
+  ''' param fs - font size (height)
+  ''' return px - width in px (pixels)
   len = Text.GetLength(txt)
   px = 0
   For p = 1 To len
