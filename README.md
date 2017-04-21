@@ -1,6 +1,5 @@
-![](img/IconEditorSmall.PNG)
-Icon Editor in Small Basic
-==========================
+![icon](img/IconEditorSmall.PNG)
+# Icon Editor in Small Basic
 
 This program is a 32 x 32 plane PPM (Portable Pixmap) bitmap editor written in Microsoft Small Basic language. Following files are used to run this program.
 
