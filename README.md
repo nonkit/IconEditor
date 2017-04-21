@@ -1,3 +1,4 @@
+![](img/IconEditorSmall.PNG)
 Icon Editor in Small Basic
 ==========================
 
