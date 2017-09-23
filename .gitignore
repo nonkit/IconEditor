@@ -1,0 +1,10 @@
+# Windows execution files
+*.exe
+*.dll
+*.pdb
+
+# Thumbnail files
+Thumbs.db
+
+# Debug files
+Graduate
