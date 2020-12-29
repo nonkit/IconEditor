@@ -13,6 +13,6 @@ This program is a 32 x 32 plane PPM (Portable Pixmap) bitmap editor written in M
 * Windows Vista or later
 * .NET Framework 4.5 or later
 
- ## Credit
+## Credit
  
- - Made with Small Basic badge is designed by [rockycodeshimhe-1332](https://docs.microsoft.com/en-us/answers/questions/210063/guys-i-made-a-nice-small-basic-github-badge.html)
+* Made with Small Basic badge is designed by [rockycodeshimhe-1332](https://docs.microsoft.com/en-us/answers/questions/210063/guys-i-made-a-nice-small-basic-github-badge.html)
